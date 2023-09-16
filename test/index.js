@@ -11,7 +11,9 @@ describe("compile", () => {
     let actual = 0;
 
     const encoded = cipherio.compile(code);
-    eval(cipherio.read(encoded));
+    const original = cipherio.read(encoded);
+
+    eval(original);
 
     assert.strictEqual(actual, expected);
   });
@@ -43,23 +45,45 @@ describe("compile", () => {
     assert.notStrictEqual(actual1, actual2);
   });
 
-  it("should have avalanche effect", () => {
+  it("should have avalanche effect without seed", () => {
     const code1 = `actual = 1;`;
     const code2 = `actual =1;`;
 
     const actual1 = cipherio.compile(code1);
     const actual2 = cipherio.compile(code2);
 
-    assert.notStrictEqual(actual1.length, actual2.length);
+    for (let i = 0; i < Math.min(actual1.length, actual2.length) - 1; i++) {
+      const sliced1 = actual1.slice(0, -i - 1);
+      const sliced2 = actual2.slice(0, -i - 1);
+
+      assert.ok(actual1[i] !== actual2[i]);
+      assert.ok(!sliced1.includes(actual2));
+      assert.ok(!sliced2.includes(actual1));
+      assert.ok(!actual1.includes(sliced2));
+      assert.ok(!actual2.includes(sliced1));
+      assert.ok(!sliced1.includes(sliced2));
+      assert.ok(!sliced2.includes(sliced1));
+    }
+  });
+
+  it("should have avalanche effect with seed", () => {
+    const code1 = `actual = 1;`;
+    const code2 = `actual = 1;`;
+
+    const actual1 = cipherio.compile(code1, 1);
+    const actual2 = cipherio.compile(code2, 2);
 
     for (let i = 0; i < Math.min(actual1.length, actual2.length) - 1; i++) {
       const sliced1 = actual1.slice(0, -i - 1);
       const sliced2 = actual2.slice(0, -i - 1);
 
+      assert.ok(actual1[i] !== actual2[i]);
       assert.ok(!sliced1.includes(actual2));
       assert.ok(!sliced2.includes(actual1));
       assert.ok(!actual1.includes(sliced2));
       assert.ok(!actual2.includes(sliced1));
+      assert.ok(!sliced1.includes(sliced2));
+      assert.ok(!sliced2.includes(sliced1));
     }
   });
 });
