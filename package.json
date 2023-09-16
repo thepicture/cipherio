@@ -1,0 +1,23 @@
+{
+  "name": "cipherio",
+  "version": "1.0.0",
+  "description": "Make secure parts in shared code",
+  "main": "index.js",
+  "repository": "thepicture/cipherio",
+  "scripts": {
+    "test": "node test"
+  },
+  "files": [
+    "index.js"
+  ],
+  "keywords": [
+    "encryption",
+    "collaboration",
+    "hash",
+    "cipher",
+    "compilation",
+    "security"
+  ],
+  "author": "thepicture",
+  "license": "ISC"
+}
