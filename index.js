@@ -2,7 +2,7 @@
 
 const cipherio = {
   compile: (code, seed = 0) => {
-    return cipherio.shuffle(code, seed, cipherio.avalanchize);
+    return cipherio.shuffle(code, seed, cipherio.avalanche);
   },
   read: (code) => {
     let compiledCode = code;
@@ -21,7 +21,7 @@ const cipherio = {
     }
   },
   decode: (binary, seed = 0) => {
-    return cipherio.shuffle(binary, seed, cipherio.unavalanchize);
+    return cipherio.shuffle(binary, seed, cipherio.unavalanche);
   },
   shuffle: (text, seed, shuffleFunction) => {
     let shuffled = "";
@@ -42,11 +42,11 @@ const cipherio = {
 
     return shuffled;
   },
-  avalanchize: ({ code, index, seed }) => {
+  avalanche: ({ code, index, seed }) => {
     return code ^ ((code << 8) | (seed & 0xff) | (index & 0xff));
   },
 
-  unavalanchize: ({ code, index, seed }) => {
+  unavalanche: ({ code, index, seed }) => {
     return (code ^ seed ^ index) >> 8;
   },
 };
