@@ -1,7 +1,7 @@
 "use strict";
 
-const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
+const { describe, it } = require("node:test");
 const cipherio = require("..");
 
 describe("compile", () => {
@@ -85,5 +85,57 @@ describe("compile", () => {
       assert.ok(!sliced1.includes(sliced2));
       assert.ok(!sliced2.includes(sliced1));
     }
+  });
+
+  it("should evaluate with default mode provided", () => {
+    const expected = 1;
+    const code = `actual = 1;`;
+    let actual = 0;
+
+    const encoded = cipherio.compile(code, { encoding: cipherio.DEFAULT });
+    const original = cipherio.read(encoded);
+    eval(original);
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it("should evaluate with huffman mode provided", () => {
+    const expected = 1;
+    const code = `actual = 1;`;
+    let actual = 0;
+
+    const defaultEncoded = cipherio.compile(code, {
+      encoding: cipherio.DEFAULT,
+    });
+    const huffmanEncoded = cipherio.compile(code, {
+      encoding: cipherio.HUFFMAN,
+    });
+    const original = cipherio.read(huffmanEncoded);
+    eval(original);
+
+    assert.notStrictEqual(defaultEncoded, huffmanEncoded);
+    assert.strictEqual(actual, expected);
+  });
+
+  it("should have huffman encoding idempotence", () => {
+    const code = `actual = 1;`;
+    const options = { encoding: cipherio.HUFFMAN };
+
+    const actual1 = cipherio.compile(code, options);
+    const actual2 = cipherio.compile(code, options);
+    const defaultEncoded = cipherio.compile(code);
+
+    assert.notStrictEqual(actual1, defaultEncoded);
+    assert.notStrictEqual(actual2, defaultEncoded);
+    assert.strictEqual(actual1, actual2);
+  });
+
+  it("should throw with huffman seed (not implemented)", () => {
+    const code = `actual = 1;`;
+    const options = { encoding: cipherio.HUFFMAN, seed: 1 };
+
+    const actual = () => cipherio.compile(code, options);
+
+    assert.throws(actual);
   });
 });

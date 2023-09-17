@@ -1,12 +1,42 @@
 "use strict";
 
+const huffman = require("./lib/huffman");
+
+const enums = {
+  DEFAULT: 2 << 0,
+  HUFFMAN: 2 << 1,
+};
+
 const cipherio = {
-  compile: (code, seed = 0) => {
+  compile: (code, seed) => {
+    if (isPrimitive(seed)) {
+      seed = getOptions(seed);
+    } else {
+      seed.seed = seed.seed || 0;
+    }
+
+    if (seed.encoding === cipherio.HUFFMAN) {
+      if (seed.seed !== 0) {
+        throw new Error("Seed with huffman not supported");
+      }
+
+      return huffman.encode(code);
+    }
+
     return cipherio.shuffle(code, seed, cipherio.avalanche);
   },
   read: (code) => {
     let compiledCode = code;
     let seed = 0;
+
+    try {
+      const decoded = huffman.decode(code);
+      const encoded = huffman.encode(decoded);
+
+      if (encoded === code) {
+        return decoded;
+      }
+    } catch {}
 
     while (1) {
       const decodedCode = cipherio.decode(compiledCode, seed);
@@ -20,10 +50,24 @@ const cipherio = {
       seed++;
     }
   },
-  decode: (binary, seed = 0) => {
+  decode: (binary, seed) => {
+    if (isPrimitive(seed)) {
+      seed = getOptions(seed);
+    } else {
+      seed.seed = seed.seed || 0;
+    }
+
+    if (seed.encoding === cipherio.HUFFMAN) {
+      if (seed.seed !== 0) {
+        throw new Error("Seed with huffman not supported");
+      }
+
+      return huffman.decode(binary);
+    }
+
     return cipherio.shuffle(binary, seed, cipherio.unavalanche);
   },
-  shuffle: (text, seed, shuffleFunction) => {
+  shuffle: (text, { seed }, shuffleFunction) => {
     let shuffled = "";
 
     for (let i = 0; i < text.length; i++) {
@@ -49,6 +93,14 @@ const cipherio = {
   unavalanche: ({ code, index, seed }) => {
     return (code ^ seed ^ index) >> 8;
   },
+  ...enums,
 };
+
+const isPrimitive = (seed) => typeof seed !== "object" && seed !== null;
+
+const getOptions = (seed) => ({
+  seed,
+  encoding: cipherio.DEFAULT,
+});
 
 module.exports = cipherio;
