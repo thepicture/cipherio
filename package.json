@@ -1,6 +1,6 @@
 {
   "name": "cipherio",
-  "version": "1.1.2",
+  "version": "1.2.2",
   "description": "Make secure parts in shared code",
   "main": "index.js",
   "repository": "thepicture/cipherio",
