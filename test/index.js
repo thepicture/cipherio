@@ -5,7 +5,7 @@ const { describe, it } = require("node:test");
 const cipherio = require("..");
 
 describe("compile", () => {
-  it("should evaluate", () => {
+  it("should compile and then read", () => {
     const expected = 1;
     const code = `actual = 1;`;
     let actual = 0;
@@ -143,5 +143,30 @@ describe("compile", () => {
     assert.strictEqual(decoded1, code);
     assert.strictEqual(decoded2, code);
     assert.notStrictEqual(actual1, actual2);
+  });
+
+  it("should support huffman without double quotes", () => {
+    const code = `actual = 1;`;
+    const options1 = { encoding: cipherio.HUFFMAN_COMPRESSED, seed: 0 };
+    const options2 = { encoding: cipherio.HUFFMAN_COMPRESSED, seed: 1 };
+
+    const actual1 = cipherio.compile(code, options1);
+    const actual2 = cipherio.compile(code, options2);
+    const decoded1 = cipherio.read(actual1);
+    const decoded2 = cipherio.read(actual2);
+
+    assert.ok(!actual1.includes('"'));
+    assert.strictEqual(decoded1, code);
+    assert.strictEqual(decoded2, code);
+    assert.notStrictEqual(actual1, actual2);
+  });
+
+  it("should throw on unknown encoding", () => {
+    const code = `actual = 1;`;
+    const options = { encoding: -1, seed: 1 };
+
+    const actual = () => cipherio.compile(code, options);
+
+    assert.throws(actual);
   });
 });

@@ -5,6 +5,7 @@ const huffman = require("./lib/huffman");
 const enums = {
   DEFAULT: 2 << 0,
   HUFFMAN: 2 << 1,
+  HUFFMAN_COMPRESSED: 2 << 2,
 };
 
 const cipherio = {
@@ -15,8 +16,14 @@ const cipherio = {
       seed.seed = seed.seed || 0;
     }
 
+    cipherio.throwIfUnknownEncoding(seed.encoding);
+
     if (seed.encoding === cipherio.HUFFMAN) {
       return huffman.encode(code, seed.seed);
+    }
+
+    if (seed.encoding === cipherio.HUFFMAN_COMPRESSED) {
+      return huffman.encode(code, seed.seed, { compressed: true });
     }
 
     return cipherio.shuffle(code, seed, cipherio.avalanche);
@@ -42,6 +49,17 @@ const cipherio = {
           return decoded;
         }
       } catch {}
+
+      try {
+        const decoded = huffman.decode(code, seed, { compressed: true });
+        const encoded = huffman.encode(decoded, seed, { compressed: true });
+
+        if (encoded === code) {
+          return decoded;
+        }
+      } catch (_) {
+        console.log(_);
+      }
 
       seed++;
     }
@@ -86,6 +104,11 @@ const cipherio = {
     return (code ^ seed ^ index) >> 8;
   },
   ...enums,
+  throwIfUnknownEncoding: (encoding) => {
+    if (!Object.values(enums).includes(encoding)) {
+      throw new Error(`Encoding ${encoding} not supported`);
+    }
+  },
 };
 
 const isPrimitive = (seed) => typeof seed !== "object" && seed !== null;
