@@ -5,6 +5,7 @@ const huffman = require("./lib/huffman");
 const enums = {
   DEFAULT: 2 << 0,
   HUFFMAN: 2 << 1,
+  HUFFMAN_COMPRESSED: 2 << 2,
 };
 
 const cipherio = {
@@ -15,12 +16,14 @@ const cipherio = {
       seed.seed = seed.seed || 0;
     }
 
-    if (seed.encoding === cipherio.HUFFMAN) {
-      if (seed.seed !== 0) {
-        throw new Error("Seed with huffman not supported");
-      }
+    cipherio.throwIfUnknownEncoding(seed.encoding);
 
-      return huffman.encode(code);
+    if (seed.encoding === cipherio.HUFFMAN) {
+      return huffman.encode(code, seed.seed);
+    }
+
+    if (seed.encoding === cipherio.HUFFMAN_COMPRESSED) {
+      return huffman.encode(code, seed.seed, { compressed: true });
     }
 
     return cipherio.shuffle(code, seed, cipherio.avalanche);
@@ -29,15 +32,6 @@ const cipherio = {
     let compiledCode = code;
     let seed = 0;
 
-    try {
-      const decoded = huffman.decode(code);
-      const encoded = huffman.encode(decoded);
-
-      if (encoded === code) {
-        return decoded;
-      }
-    } catch {}
-
     while (1) {
       const decodedCode = cipherio.decode(compiledCode, seed);
 
@@ -45,6 +39,26 @@ const cipherio = {
 
       if (code === reEncodedCode) {
         return decodedCode;
+      }
+
+      try {
+        const decoded = huffman.decode(code, seed);
+        const encoded = huffman.encode(decoded, seed);
+
+        if (encoded === code) {
+          return decoded;
+        }
+      } catch {}
+
+      try {
+        const decoded = huffman.decode(code, seed, { compressed: true });
+        const encoded = huffman.encode(decoded, seed, { compressed: true });
+
+        if (encoded === code) {
+          return decoded;
+        }
+      } catch (_) {
+        console.log(_);
       }
 
       seed++;
@@ -58,11 +72,7 @@ const cipherio = {
     }
 
     if (seed.encoding === cipherio.HUFFMAN) {
-      if (seed.seed !== 0) {
-        throw new Error("Seed with huffman not supported");
-      }
-
-      return huffman.decode(binary);
+      return huffman.decode(binary, seed);
     }
 
     return cipherio.shuffle(binary, seed, cipherio.unavalanche);
@@ -94,6 +104,11 @@ const cipherio = {
     return (code ^ seed ^ index) >> 8;
   },
   ...enums,
+  throwIfUnknownEncoding: (encoding) => {
+    if (!Object.values(enums).includes(encoding)) {
+      throw new Error(`Encoding ${encoding} not supported`);
+    }
+  },
 };
 
 const isPrimitive = (seed) => typeof seed !== "object" && seed !== null;
