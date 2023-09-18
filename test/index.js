@@ -130,12 +130,18 @@ describe("compile", () => {
     assert.strictEqual(actual1, actual2);
   });
 
-  it("should throw with huffman seed (not implemented)", () => {
+  it("should support huffman seed", () => {
     const code = `actual = 1;`;
-    const options = { encoding: cipherio.HUFFMAN, seed: 1 };
+    const options1 = { encoding: cipherio.HUFFMAN, seed: 1 };
+    const options2 = { encoding: cipherio.HUFFMAN, seed: 2 };
 
-    const actual = () => cipherio.compile(code, options);
+    const actual1 = cipherio.compile(code, options1);
+    const actual2 = cipherio.compile(code, options2);
+    const decoded1 = cipherio.read(actual1);
+    const decoded2 = cipherio.read(actual2);
 
-    assert.throws(actual);
+    assert.strictEqual(decoded1, code);
+    assert.strictEqual(decoded2, code);
+    assert.notStrictEqual(actual1, actual2);
   });
 });

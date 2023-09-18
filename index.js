@@ -16,11 +16,7 @@ const cipherio = {
     }
 
     if (seed.encoding === cipherio.HUFFMAN) {
-      if (seed.seed !== 0) {
-        throw new Error("Seed with huffman not supported");
-      }
-
-      return huffman.encode(code);
+      return huffman.encode(code, seed.seed);
     }
 
     return cipherio.shuffle(code, seed, cipherio.avalanche);
@@ -28,15 +24,6 @@ const cipherio = {
   read: (code) => {
     let compiledCode = code;
     let seed = 0;
-
-    try {
-      const decoded = huffman.decode(code);
-      const encoded = huffman.encode(decoded);
-
-      if (encoded === code) {
-        return decoded;
-      }
-    } catch {}
 
     while (1) {
       const decodedCode = cipherio.decode(compiledCode, seed);
@@ -46,6 +33,15 @@ const cipherio = {
       if (code === reEncodedCode) {
         return decodedCode;
       }
+
+      try {
+        const decoded = huffman.decode(code, seed);
+        const encoded = huffman.encode(decoded, seed);
+
+        if (encoded === code) {
+          return decoded;
+        }
+      } catch {}
 
       seed++;
     }
@@ -58,11 +54,7 @@ const cipherio = {
     }
 
     if (seed.encoding === cipherio.HUFFMAN) {
-      if (seed.seed !== 0) {
-        throw new Error("Seed with huffman not supported");
-      }
-
-      return huffman.decode(binary);
+      return huffman.decode(binary, seed);
     }
 
     return cipherio.shuffle(binary, seed, cipherio.unavalanche);
