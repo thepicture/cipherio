@@ -169,4 +169,12 @@ describe("compile", () => {
 
     assert.throws(actual);
   });
+
+  it("should not expose private methods", () => {
+    assert.ok(typeof cipherio.decode === "undefined");
+    assert.ok(typeof cipherio.shuffle === "undefined");
+    assert.ok(typeof cipherio.avalanche === "undefined");
+    assert.ok(typeof cipherio.unavalanche === "undefined");
+    assert.ok(typeof cipherio.throwIfUnknownEncoding === "undefined");
+  });
 });

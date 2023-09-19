@@ -1,41 +1,41 @@
 "use strict";
 
 const huffman = require("./lib/huffman");
+const { getNormalizedParams } = require("./lib/formatters");
 
-const enums = {
-  DEFAULT: 2 << 0,
-  HUFFMAN: 2 << 1,
-  HUFFMAN_COMPRESSED: 2 << 2,
-};
+class cipherio {
+  static DEFAULT = 2 << 0;
+  static HUFFMAN = 2 << 1;
+  static HUFFMAN_COMPRESSED = 2 << 2;
 
-const cipherio = {
-  compile: (code, seed) => {
-    if (isPrimitive(seed)) {
-      seed = getOptions(seed);
-    } else {
-      seed.seed = seed.seed || 0;
+  static #BIT_SHIFT_AMOUNT = 8;
+  static #SEED_MODIFIER = 0xff;
+
+  static compile(code, params) {
+    params = getNormalizedParams(params, this.DEFAULT);
+
+    switch (params.encoding) {
+      case this.HUFFMAN: {
+        return huffman.encode(code, params.seed);
+      }
+      case this.HUFFMAN_COMPRESSED: {
+        return huffman.encode(code, params.seed, { compressed: true });
+      }
+      case this.DEFAULT:
+        return this.#shuffle(code, params, this.#disorder.bind(this));
+      default:
+        this.#throw();
     }
+  }
 
-    cipherio.throwIfUnknownEncoding(seed.encoding);
-
-    if (seed.encoding === cipherio.HUFFMAN) {
-      return huffman.encode(code, seed.seed);
-    }
-
-    if (seed.encoding === cipherio.HUFFMAN_COMPRESSED) {
-      return huffman.encode(code, seed.seed, { compressed: true });
-    }
-
-    return cipherio.shuffle(code, seed, cipherio.avalanche);
-  },
-  read: (code) => {
+  static read(code) {
     let compiledCode = code;
     let seed = 0;
 
     while (1) {
-      const decodedCode = cipherio.decode(compiledCode, seed);
+      const decodedCode = this.#decode(compiledCode, seed);
 
-      const reEncodedCode = cipherio.compile(decodedCode, seed);
+      const reEncodedCode = this.compile(decodedCode, seed);
 
       if (code === reEncodedCode) {
         return decodedCode;
@@ -57,27 +57,23 @@ const cipherio = {
         if (encoded === code) {
           return decoded;
         }
-      } catch (_) {
-        console.log(_);
-      }
+      } catch {}
 
       seed++;
     }
-  },
-  decode: (binary, seed) => {
-    if (isPrimitive(seed)) {
-      seed = getOptions(seed);
-    } else {
-      seed.seed = seed.seed || 0;
+  }
+
+  static #decode(binary, params) {
+    params = getNormalizedParams(params);
+
+    if (params.encoding === this.HUFFMAN) {
+      return huffman.decode(binary, params);
     }
 
-    if (seed.encoding === cipherio.HUFFMAN) {
-      return huffman.decode(binary, seed);
-    }
+    return this.#shuffle(binary, params, this.#restore.bind(this));
+  }
 
-    return cipherio.shuffle(binary, seed, cipherio.unavalanche);
-  },
-  shuffle: (text, { seed }, shuffleFunction) => {
+  static #shuffle(text, { seed }, shuffleFunction) {
     let shuffled = "";
 
     for (let i = 0; i < text.length; i++) {
@@ -95,27 +91,24 @@ const cipherio = {
     }
 
     return shuffled;
-  },
-  avalanche: ({ code, index, seed }) => {
-    return code ^ ((code << 8) | (seed & 0xff) | (index & 0xff));
-  },
+  }
 
-  unavalanche: ({ code, index, seed }) => {
-    return (code ^ seed ^ index) >> 8;
-  },
-  ...enums,
-  throwIfUnknownEncoding: (encoding) => {
-    if (!Object.values(enums).includes(encoding)) {
-      throw new Error(`Encoding ${encoding} not supported`);
-    }
-  },
-};
+  static #disorder({ code, index, seed }) {
+    return (
+      code ^
+      ((code << this.#BIT_SHIFT_AMOUNT) |
+        (seed & this.#SEED_MODIFIER) |
+        (index & this.#SEED_MODIFIER))
+    );
+  }
 
-const isPrimitive = (seed) => typeof seed !== "object" && seed !== null;
+  static #restore({ code, index, seed }) {
+    return (code ^ seed ^ index) >> this.#BIT_SHIFT_AMOUNT;
+  }
 
-const getOptions = (seed) => ({
-  seed,
-  encoding: cipherio.DEFAULT,
-});
+  static #throw(encoding) {
+    throw new Error(`Encoding ${encoding} not supported`);
+  }
+}
 
 module.exports = cipherio;
