@@ -11,6 +11,58 @@ class cipherio {
   static #BIT_SHIFT_AMOUNT = 8;
   static #SEED_MODIFIER = 0xff;
 
+  static Wrapper = class {
+    constructor() {
+      return new Proxy(this, {
+        map: new Map(),
+        get(target, name) {
+          const self = this;
+
+          if (name === "toJSON") {
+            return target.constructor.toString();
+          }
+
+          const key = JSON.stringify({
+            target: target.constructor.toString(),
+            name,
+          });
+
+          if (typeof target[name] === "function") {
+            if (this.map.has(key)) {
+              return () => this.map.get(key);
+            }
+
+            return function (...args) {
+              const output = target[name].bind(target)(...args);
+
+              if (typeof output === "string") {
+                const response = cipherio.compile(output);
+
+                self.map.set(key, response);
+
+                return response;
+              }
+
+              return output;
+            };
+          }
+
+          const value = target[name];
+
+          if (typeof value === "string") {
+            const response = cipherio.compile(value);
+
+            self.map.set(key, response);
+
+            return response;
+          }
+
+          return value;
+        },
+      });
+    }
+  };
+
   static compile(code, params) {
     params = getNormalizedParams(params, this.DEFAULT);
 
