@@ -177,4 +177,96 @@ describe("compile", () => {
     assert.ok(typeof cipherio.unavalanche === "undefined");
     assert.ok(typeof cipherio.throwIfUnknownEncoding === "undefined");
   });
+
+  it("should allow to hash class", () => {
+    const instance = new (class extends cipherio.Wrapper {})();
+
+    assert.ok(instance instanceof cipherio.Wrapper);
+  });
+
+  it("should allow to hash class", () => {
+    const instance = new (class extends cipherio.Wrapper {
+      ok() {
+        return true;
+      }
+    })();
+
+    const actual = () => instance.ok();
+
+    assert.doesNotThrow(actual);
+  });
+
+  it("should return hashed values for functions that return strings", () => {
+    const expected = "01";
+    const instance = new (class extends cipherio.Wrapper {
+      ok() {
+        return "01";
+      }
+    })();
+
+    const actual = cipherio.read(instance.ok());
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it("should return original values for functions that return not strings", () => {
+    const expected = true;
+    const instance = new (class extends cipherio.Wrapper {
+      ok() {
+        return true;
+      }
+    })();
+
+    const actual = instance.ok();
+
+    assert.ok(typeof actual !== "string");
+    assert.strictEqual(actual, expected);
+  });
+
+  it("should cache calls", () => {
+    const expected = "abc";
+    const instance = new (class extends cipherio.Wrapper {
+      ok() {
+        return "abc";
+      }
+    })();
+
+    instance.ok();
+    instance.ok();
+    instance.ok();
+    instance.ok();
+    instance.ok();
+    instance.ok();
+    const actual = cipherio.read(instance.ok());
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it("should hash properties", () => {
+    const expected = "abc";
+    const instance = new (class extends cipherio.Wrapper {
+      prop = "abc";
+    })();
+
+    const actual = cipherio.read(instance.prop);
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it("should work with props and functions simultaneously", () => {
+    const expected1 = "abc";
+    const expected2 = "bar";
+    const instance = new (class extends cipherio.Wrapper {
+      prop = "abc";
+      foo() {
+        return "bar";
+      }
+    })();
+
+    const actual1 = cipherio.read(instance.prop);
+    const actual2 = cipherio.read(instance.foo());
+
+    assert.strictEqual(actual1, expected1);
+    assert.strictEqual(actual2, expected2);
+  });
 });

@@ -43,6 +43,20 @@ const decoded2 = cipherio.read(ecnoded2);
 
 `encoding` defaults to `cipherio.DEFAULT`
 
+Wrapping classes to return hashed values
+
+```js
+const instance = new (class extends cipherio.Wrapper {
+  prop = "abc";
+  foo() {
+    return "bar";
+  }
+})();
+
+const originalProp = cipherio.read(instance.prop);
+const functionResult = cipherio.read(instance.foo());
+```
+
 ## Test
 
 ```bash
