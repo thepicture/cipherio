@@ -269,4 +269,158 @@ describe("compile", () => {
     assert.strictEqual(actual1, expected1);
     assert.strictEqual(actual2, expected2);
   });
+
+  it("should work with many props as numbers passed into function not hashed", () => {
+    const expected = 6;
+    const instance = new (class extends cipherio.Wrapper {
+      foo(a, b, c) {
+        return a + b + c;
+      }
+    })();
+
+    const actual = instance.foo(1, 2, 3);
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it("should work with many props as strings passed into function hashed", () => {
+    const expected = "123";
+    const instance = new (class extends cipherio.Wrapper {
+      foo(a, b, c) {
+        return a + b + c;
+      }
+    })();
+
+    const actual = cipherio.read(instance.foo("1", "2", "3"));
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it("should allow to set string property that becomes hashed", () => {
+    const expected = "123";
+    const instance = new (class extends cipherio.Wrapper {})();
+
+    instance.prop = "123";
+
+    const actual = cipherio.read(instance.prop);
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it("should allow to set number property that will not become hashed", () => {
+    const expected = 123;
+    const instance = new (class extends cipherio.Wrapper {})();
+
+    instance.prop = 123;
+
+    const actual = instance.prop;
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it("should work with objects that will not be hashed", () => {
+    const expected = {
+      a: 1,
+      b: 2,
+      c: 3,
+    };
+    const instance = new (class extends cipherio.Wrapper {
+      foo(a, b, c) {
+        return {
+          ...a,
+          ...b,
+          ...c,
+        };
+      }
+    })();
+
+    const actual = instance.foo({ a: 1 }, { b: 2 }, { c: 3 });
+
+    assert.deepStrictEqual(actual, expected);
+  });
+
+  it("should work with special values", () => {
+    const expected = [null, undefined, NaN, Infinity];
+    const instance = new (class extends cipherio.Wrapper {
+      foo(...args) {
+        return args;
+      }
+    })();
+
+    const actual = instance.foo(null, undefined, NaN, Infinity);
+
+    assert.deepStrictEqual(actual, expected);
+  });
+
+  it("should trigger wrapper to emit value changes on function call", (done) => {
+    const instance = new (class extends cipherio.Wrapper {
+      foo() {
+        return true;
+      }
+    })();
+
+    instance.on("call", ({ key, before, after, didHash }) => {
+      assert.ok(key);
+      assert.ok(before);
+      assert.ok(after);
+      assert.ok(!didHash);
+
+      done();
+    });
+
+    instance.foo();
+  });
+
+  it("should not trigger 'on' (itself)", (done) => {
+    const instance = new (class extends cipherio.Wrapper {
+      foo() {
+        return true;
+      }
+    })();
+
+    instance.on("call", ({ key, before, after, didHash }) => {
+      assert.ok(key);
+      assert.ok(before);
+      assert.ok(after);
+      assert.ok(!didHash);
+
+      done();
+    });
+
+    done();
+  });
+
+  it("should trigger access property", (done) => {
+    const instance = new (class extends cipherio.Wrapper {
+      foo() {
+        return true;
+      }
+    })();
+
+    instance.on("access", ({ key, didHash }) => {
+      assert.ok(key);
+      assert.ok(!didHash);
+
+      done();
+    });
+
+    instance.x;
+  });
+
+  it("before prop should not be after prop when string in prop", (done) => {
+    const instance = new (class extends cipherio.Wrapper {
+      x = "abc";
+      foo() {
+        return true;
+      }
+    })();
+
+    instance.on("access", ({ before, after }) => {
+      assert.notStrictEqual(before, after);
+
+      done();
+    });
+
+    instance.x;
+  });
 });
