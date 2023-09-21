@@ -57,6 +57,38 @@ const originalProp = cipherio.read(instance.prop);
 const functionResult = cipherio.read(instance.foo());
 ```
 
+Subscribe to events
+
+```js
+const instance = new (class extends cipherio.Wrapper {
+  x = "abc";
+  foo() {
+    return true;
+  }
+})();
+
+instance.on("access", ({ before, after }) => {
+  console.log(before !== after); // true
+});
+
+instance.x;
+```
+
+```js
+const instance = new (class extends cipherio.Wrapper {
+  x = "abc";
+  foo() {
+    return true;
+  }
+})();
+
+instance.on("call", ({ before, after }) => {
+  // ...
+});
+
+instance.foo();
+```
+
 ## Test
 
 ```bash

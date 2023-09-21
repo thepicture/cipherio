@@ -1,5 +1,7 @@
 "use strict";
 
+const { EventEmitter } = require("node:events");
+
 const huffman = require("./lib/huffman");
 const { getNormalizedParams } = require("./lib/formatters");
 
@@ -11,12 +13,16 @@ class cipherio {
   static #BIT_SHIFT_AMOUNT = 8;
   static #SEED_MODIFIER = 0xff;
 
-  static Wrapper = class {
+  static Wrapper = class extends EventEmitter {
     constructor() {
+      super();
+
       return new Proxy(this, {
         map: new Map(),
         get(target, name) {
           const self = this;
+
+          const isEventSubscription = name === "on";
 
           if (name === "toJSON") {
             return target.constructor.toString();
@@ -40,8 +46,24 @@ class cipherio {
 
                 self.map.set(key, response);
 
+                !isEventSubscription &&
+                  target.emit("call", {
+                    key,
+                    before: output,
+                    after: response,
+                    didHash: true,
+                  });
+
                 return response;
               }
+
+              !isEventSubscription &&
+                target.emit("call", {
+                  key,
+                  before: output,
+                  after: output,
+                  didHash: false,
+                });
 
               return output;
             };
@@ -54,8 +76,24 @@ class cipherio {
 
             self.map.set(key, response);
 
+            !isEventSubscription &&
+              target.emit("access", {
+                key,
+                before: value,
+                after: response,
+                didHash: true,
+              });
+
             return response;
           }
+
+          !isEventSubscription &&
+            target.emit("access", {
+              key,
+              before: value,
+              after: value,
+              didHash: false,
+            });
 
           return value;
         },
