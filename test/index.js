@@ -424,7 +424,7 @@ describe("compile", () => {
     instance.x;
   });
 
-  it("should work with toJSON call in wrapped instance", (done) => {
+  it("should work with overridden toJSON call in wrapped instance when called explicitly", (done) => {
     const instance = new (class extends cipherio.Wrapper {
       x = "abc";
       toJSON() {
@@ -439,5 +439,41 @@ describe("compile", () => {
     });
 
     instance.toJSON();
+  });
+
+  it("should work with overridden toJSON call in wrapped instance when called implicitly", (done) => {
+    const instance = new (class extends cipherio.Wrapper {
+      x = "abc";
+      toJSON() {
+        return "{}";
+      }
+    })();
+
+    instance.on("call", ({ before, after }) => {
+      assert.notStrictEqual(before, after);
+
+      done();
+    });
+
+    JSON.stringify(instance);
+  });
+
+  it("should work with non-overridden toJSON call in wrapped instance", () => {
+    const instance = new (class extends cipherio.Wrapper {})();
+
+    JSON.stringify(instance);
+  });
+
+  it("should work with event subscription method name coalesce in wrapped instance", () => {
+    const expected = "test";
+    const instance = new (class extends cipherio.Wrapper {
+      on(name) {
+        return name;
+      }
+    })();
+
+    const actual = cipherio.read(instance.on("test"));
+
+    assert.strictEqual(actual, expected);
   });
 });
