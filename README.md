@@ -34,9 +34,9 @@ const options1 = { encoding: cipherio.HUFFMAN, seed: 0 };
 const options2 = { encoding: cipherio.HUFFMAN_COMPRESSED, seed: 1 };
 
 const encoded1 = cipherio.compile(code, options1);
-const ecnoded2 = cipherio.compile(code, options2);
+const encoded2 = cipherio.compile(code, options2);
 const decoded1 = cipherio.read(encoded1);
-const decoded2 = cipherio.read(ecnoded2);
+const decoded2 = cipherio.read(encoded2);
 ```
 
 `seed` defaults to 0
