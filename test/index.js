@@ -423,4 +423,21 @@ describe("compile", () => {
 
     instance.x;
   });
+
+  it("should work with toJSON call in wrapped instance", (done) => {
+    const instance = new (class extends cipherio.Wrapper {
+      x = "abc";
+      toJSON() {
+        return "{}";
+      }
+    })();
+
+    instance.on("call", ({ before, after }) => {
+      assert.notStrictEqual(before, after);
+
+      done();
+    });
+
+    instance.toJSON();
+  });
 });

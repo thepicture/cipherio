@@ -24,10 +24,6 @@ class cipherio {
 
           const isEventSubscription = name === "on";
 
-          if (name === "toJSON") {
-            return target.constructor.toString();
-          }
-
           const key = JSON.stringify({
             target: target.constructor.toString(),
             name,
