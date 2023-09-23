@@ -89,6 +89,22 @@ instance.on("call", ({ before, after }) => {
 instance.foo();
 ```
 
+Dynamic inheriting
+
+```js
+const Parent = class {
+  noop() {}
+};
+
+const instance = new (class extends cipherio.Wrapper {
+  constructor() {
+    super(Parent);
+  }
+})();
+
+instance.noop();
+```
+
 ## Test
 
 ```bash

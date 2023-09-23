@@ -476,4 +476,48 @@ describe("compile", () => {
 
     assert.strictEqual(actual, expected);
   });
+
+  it("should make this context to return wrapped instance", () => {
+    const expected = 0;
+    const instance = new (class extends cipherio.Wrapper {
+      x = 0;
+      get() {
+        return this.x;
+      }
+    })();
+
+    const actual = instance.get();
+
+    assert.strictEqual(actual, expected);
+  });
+
+  it("should allow to subscribe to custom events from wrapped instance", (done) => {
+    const instance = new (class extends cipherio.Wrapper {
+      invoke() {
+        this.emit("test");
+      }
+    })();
+
+    instance.on("test", done);
+
+    instance.invoke();
+  });
+
+  it("should allow to dynamically extend class", () => {
+    const Parent = class {
+      noop() {}
+    };
+
+    const instance = new (class extends cipherio.Wrapper {
+      constructor() {
+        super(Parent);
+      }
+    })();
+
+    instance.noop();
+
+    assert.ok(instance.noop);
+    assert.ok(!instance.on);
+    assert.ok(!instance.emit);
+  });
 });
