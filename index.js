@@ -14,15 +14,23 @@ class cipherio {
   static #SEED_MODIFIER = 0xff;
 
   static Wrapper = class extends EventEmitter {
-    constructor() {
+    #extends;
+
+    constructor(extendTarget) {
       super();
+
+      if (extendTarget) {
+        Object.setPrototypeOf(this.__proto__, extendTarget.prototype);
+
+        this.#extends = true;
+      }
 
       return new Proxy(this, {
         map: new Map(),
         get(target, name) {
           const self = this;
 
-          const isEventSubscription = name === "on";
+          const isEventSubscription = name === "on" || target.#extends;
 
           const key = JSON.stringify({
             target: target.constructor.toString(),
@@ -34,7 +42,7 @@ class cipherio {
               return () => this.map.get(key);
             }
 
-            return function (...args) {
+            return (...args) => {
               const output = target[name].bind(target)(...args);
 
               if (typeof output === "string") {
