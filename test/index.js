@@ -352,62 +352,67 @@ describe("compile", () => {
     assert.deepStrictEqual(actual, expected);
   });
 
-  it("should trigger wrapper to emit value changes on function call", (done) => {
+  it("should trigger wrapper to emit value changes on function call", async () => {
     const instance = new (class extends cipherio.Wrapper {
       foo() {
         return true;
       }
     })();
 
-    instance.on("call", ({ key, before, after, didHash }) => {
-      assert.ok(key);
-      assert.ok(before);
-      assert.ok(after);
-      assert.ok(!didHash);
+    await new Promise((resolve) => {
+      instance.on("call", ({ key, before, after, didHash }) => {
+        assert.ok(key);
+        assert.ok(before);
+        assert.ok(after);
+        assert.ok(!didHash);
 
-      done();
+        resolve();
+      });
+
+      instance.foo();
     });
-
-    instance.foo();
   });
 
-  it("should not trigger 'on' (itself)", (done) => {
+  it("should not trigger 'on' (itself)", async () => {
     const instance = new (class extends cipherio.Wrapper {
       foo() {
         return true;
       }
     })();
 
-    instance.on("call", ({ key, before, after, didHash }) => {
-      assert.ok(key);
-      assert.ok(before);
-      assert.ok(after);
-      assert.ok(!didHash);
+    await new Promise(async (resolve) => {
+      instance.on("call", ({ key, before, after, didHash }) => {
+        assert.ok(key);
+        assert.ok(before);
+        assert.ok(after);
+        assert.ok(!didHash);
+      });
 
-      done();
+      await new Promise((wait) => setTimeout(wait, 0));
+      resolve();
     });
-
-    done();
   });
 
-  it("should trigger access property", (done) => {
+  it("should trigger access property", async () => {
     const instance = new (class extends cipherio.Wrapper {
       foo() {
         return true;
       }
     })();
 
-    instance.on("access", ({ key, didHash }) => {
-      assert.ok(key);
-      assert.ok(!didHash);
+    await new Promise((resolve) => {
+      instance.on("access", ({ key, didHash }) => {
+        assert.ok(key);
+        assert.ok(!didHash);
 
-      done();
+        resolve();
+      });
+
+      instance.x;
     });
-
-    instance.x;
   });
 
-  it("before prop should not be after prop when string in prop", (done) => {
+  it("before prop should not be after prop when string in prop", async () => {
     const instance = new (class extends cipherio.Wrapper {
       x = "abc";
       foo() {
@@ -415,33 +420,18 @@ describe("compile", () => {
       }
     })();
 
-    instance.on("access", ({ before, after }) => {
-      assert.notStrictEqual(before, after);
+    await new Promise((resolve) => {
+      instance.on("access", ({ before, after }) => {
+        assert.notStrictEqual(before, after);
 
-      done();
+        resolve();
+      });
+
+      instance.x;
     });
-
-    instance.x;
   });
 
-  it("should work with overridden toJSON call in wrapped instance when called explicitly", (done) => {
-    const instance = new (class extends cipherio.Wrapper {
-      x = "abc";
-      toJSON() {
-        return "{}";
-      }
-    })();
-
-    instance.on("call", ({ before, after }) => {
-      assert.notStrictEqual(before, after);
-
-      done();
-    });
-
-    instance.toJSON();
-  });
-
-  it("should work with overridden toJSON call in wrapped instance when called implicitly", (done) => {
+  it("should work with overridden toJSON call in wrapped instance when called explicitly", async () => {
     const instance = new (class extends cipherio.Wrapper {
       x = "abc";
       toJSON() {
@@ -449,13 +439,34 @@ describe("compile", () => {
       }
     })();
 
-    instance.on("call", ({ before, after }) => {
-      assert.notStrictEqual(before, after);
+    await new Promise((resolve) => {
+      instance.on("call", ({ before, after }) => {
+        assert.notStrictEqual(before, after);
 
-      done();
+        resolve();
+      });
+
+      instance.toJSON();
     });
+  });
 
-    JSON.stringify(instance);
+  it("should work with overridden toJSON call in wrapped instance when called implicitly", async () => {
+    const instance = new (class extends cipherio.Wrapper {
+      x = "abc";
+      toJSON() {
+        return "{}";
+      }
+    })();
+
+    await new Promise((resolve) => {
+      instance.on("call", ({ before, after }) => {
+        assert.notStrictEqual(before, after);
+
+        resolve();
+      });
+
+      JSON.stringify(instance);
+    });
   });
 
   it("should work with non-overridden toJSON call in wrapped instance", () => {
@@ -491,16 +502,18 @@ describe("compile", () => {
     assert.strictEqual(actual, expected);
   });
 
-  it("should allow to subscribe to custom events from wrapped instance", (done) => {
+  it("should allow to subscribe to custom events from wrapped instance", async () => {
     const instance = new (class extends cipherio.Wrapper {
       invoke() {
         this.emit("test");
       }
     })();
 
-    instance.on("test", done);
+    await new Promise((resolve) => {
+      instance.on("test", resolve);
 
-    instance.invoke();
+      instance.invoke();
+    });
   });
 
   it("should allow to dynamically extend class", () => {
